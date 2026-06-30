@@ -1,0 +1,5 @@
+.postgres-data/
+.pgpass-init
+*.log
+node_modules/
+dist/
