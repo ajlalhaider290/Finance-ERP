@@ -30,6 +30,9 @@ const _invoiceBaseSchema = z.object({
 	currentApproverId: z.uuid("Invalid UUID format").nullable().optional(),
 	invoiceDocumentId: z.uuid("Invalid UUID format").nullable().optional(),
 	entityId: z.uuid("Invalid UUID format"),
+	sourceType: z.enum(["manual", "reimbursement", "intercompany"]).nullable().optional(),
+	sourceReimbursementRequestId: z.uuid("Invalid UUID format").nullable().optional(),
+	sourceIntercompanyTransactionId: z.uuid("Invalid UUID format").nullable().optional(),
 });
 
 export const createInvoicePayloadValidator = _invoiceBaseSchema.refine(async (data) => {
@@ -63,5 +66,4 @@ export const updateInvoicePayloadValidator = (invoiceId: string) => _invoiceBase
     message: 'This combination of invoiceNumber already exists',
     path: ['invoiceNumber'],
   });
-
 

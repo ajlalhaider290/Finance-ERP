@@ -24,7 +24,7 @@ IntercompanyTransactionRoutes.get('/select', validateAccessToken, requireRoles([
   }),
 );
 
-IntercompanyTransactionRoutes.post('/', validateAccessToken, requireRoles(['user:superAdmin']),
+IntercompanyTransactionRoutes.post('/', validateAccessToken, requireRoles(['user:accountant','user:accountsManager','user:superAdmin']),
   validateZodSchema(createIntercompanyTransactionPayloadValidator, 'body'),
   asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const result = await addIntercompanyTransaction(req.body);

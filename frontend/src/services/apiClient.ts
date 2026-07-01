@@ -18,6 +18,9 @@ const apiClient = axios.create({
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    Pragma: 'no-cache',
+    Expires: '0',
   },
 });
 
@@ -136,6 +139,12 @@ apiClient.interceptors.request.use(
 
     if (token) {
       config.headers[REQUEST_HEADER_AUTH_KEY] = `${TOKEN_TYPE} ${token}`;
+    }
+
+    if ((config.method || 'get').toLowerCase() === 'get') {
+      config.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, proxy-revalidate';
+      config.headers.Pragma = 'no-cache';
+      config.headers.Expires = '0';
     }
 
     return config;

@@ -10,8 +10,8 @@ export const invoiceTools: EntityToolDefinition[] = [
     description: 'List all invoices.',
     requiredRoles: ['user:approver', 'user:accountant', 'user:accountsManager', 'user:superAdmin'],
     inputSchema: listInvoicesSchema,
-    handler: async (args) => {
-      const result = await fetchInvoiceList(args);
+    handler: async (args, ctx) => {
+      const result = await fetchInvoiceList(args, (ctx.req as any).user);
       return createToolResponse({
         ...result,
         meta: { ...result.meta, timestamp: new Date().toISOString() },
@@ -23,9 +23,9 @@ export const invoiceTools: EntityToolDefinition[] = [
     description: 'Create a new invoice.',
     requiredRoles: ['user:accountant', 'user:superAdmin'],
     inputSchema: createInvoiceSchema,
-    handler: async (args) => {
+    handler: async (args, ctx) => {
       const validated = await createInvoicePayloadValidator.parseAsync(args);
-      const result = await addInvoice(validated);
+      const result = await addInvoice(validated, (ctx.req as any).user);
       return createToolResponse({
         ...result,
         meta: { timestamp: new Date().toISOString() },

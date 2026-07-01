@@ -29,16 +29,18 @@ export const fetchCompanyEntityList = async (params: QueryCompanyEntityInput) =>
 };
 
 export const selectCompanyEntity = async () => {
-
 	const results = await CompanyEntity.findAll({
-		attributes: [
-			['entity_id', 'value'],
-			['entity_name', 'label'],
-		],
+		attributes: ['entityId', 'entityName'],
+		order: [['entityName', 'ASC']],
 	});
 
-	const plainRows = results.map((item) => item.get({ plain: true }));
-	return plainRows;
+	return results.map((item) => {
+		const row = item.get({ plain: true }) as { entityId: string; entityName: string };
+		return {
+			value: row.entityId,
+			label: row.entityName,
+		};
+	});
 };
 
 export const addCompanyEntity = async (payload: CreateCompanyEntityInput): Promise<any> => {

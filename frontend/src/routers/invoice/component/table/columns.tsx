@@ -33,6 +33,17 @@ export const invoiceGetColumns = (hiddenActions?: string[]): ColumnDef<InvoiceIn
         : (row.getValue("invoiceNumber") as string | number | boolean | null | undefined))) ?? '-'}</>),
 		},
 		{
+			accessorKey: "sourceType",
+			header: ({ column }) => (
+				<DataTableColumnHeader column={column} title="Source" />
+			),
+			cell: ({ row }) => {
+				const sourceType = row.original.sourceType || 'manual';
+				const sourceLabel = row.original.sourceReimbursementRequestLabel || row.original.sourceIntercompanyTransactionLabel;
+				return <span>{sourceLabel ? `${sourceType}: ${sourceLabel}` : sourceType}</span>;
+			},
+		},
+		{
 			accessorKey: "invoiceDate",
 			header: ({ column }) => (
 				<DataTableColumnHeader column={column} title="Invoice Date" />

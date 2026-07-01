@@ -14,5 +14,7 @@ export function handleApiFormErrors<T extends FieldValues>(error: unknown, form:
     });
   } else if (apiError?.message) {
     toast.error(apiError.message);
+  } else {
+    toast.error('Request failed. Please try again.');
   }
 }

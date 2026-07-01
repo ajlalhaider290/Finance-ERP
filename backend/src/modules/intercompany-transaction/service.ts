@@ -5,6 +5,7 @@ import { CompanyEntity } from '../../models/company-entity';
 import { User } from '../../models/user';
 import { convertStringFieldsToNumbers } from '../../util/dataTransform';
 import { AppError, notFound, badRequest, conflict } from '../../errors';
+import { createSystemInvoiceForIntercompany } from '../invoice/service';
 
 
 import { IntercompanyTransactionPrimaryKeys, CreateIntercompanyTransactionInput, UpdateIntercompanyTransactionInput, QueryIntercompanyTransactionInput } from './types';
@@ -59,18 +60,25 @@ export const addIntercompanyTransaction = async (payload: CreateIntercompanyTran
 	return sequelize.transaction(async (t) => {
 	// Prepare payload data and add properties
 
+	const amount = Number(payload.amount ?? 0);
+	const taxAmount = Number(payload.taxAmount ?? 0);
 	const intercompanyTransactionDefaultPayload = {
 			transactionDate: payload.transactionDate ?? new Date(),
 			transactionType: payload.transactionType ?? "billing",
 			currencyCode: payload.currencyCode ?? "USD",
-			amount: payload.amount ?? 0,
+			amount,
 			lineDetail: payload.lineDetail ?? null,
-			taxAmount: payload.taxAmount ?? 0,
+			taxAmount,
 			status: payload.status ?? "draft"
 	};
 	const intercompanyTransaction = await IntercompanyTransaction.create({...payload, ...intercompanyTransactionDefaultPayload}, { transaction: t });
+	const plainIntercompanyTransaction = intercompanyTransaction.get({ plain: true });
+	await createSystemInvoiceForIntercompany(plainIntercompanyTransaction, t);
 
-	return intercompanyTransaction.get({ plain: true });
+	return {
+		...plainIntercompanyTransaction,
+		linkedInvoiceCreated: true,
+	};
 	});
 };
 
@@ -190,4 +198,3 @@ export const deleteIntercompanyTransaction = async (params: IntercompanyTransact
 	return { messageCode: 'INTERCOMPANY_TRANSACTION_DELETED_SUCCESSFULLY',  message: 'intercompanyTransaction Deleted Successfully' };
 	});
 };
-

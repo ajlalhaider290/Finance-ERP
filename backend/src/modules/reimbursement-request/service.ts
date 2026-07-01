@@ -14,6 +14,7 @@ import {
 	isEmployee,
 	sanitizeEmployeeReimbursementPayload,
 } from './access';
+import { createSystemInvoiceForReimbursement } from '../invoice/service';
 
 
 import { ReimbursementRequestPrimaryKeys, CreateReimbursementRequestInput, UpdateReimbursementRequestInput, QueryReimbursementRequestInput } from './types';
@@ -80,18 +81,38 @@ export const addReimbursementRequest = async (payload: CreateReimbursementReques
 		? sanitizeEmployeeReimbursementPayload(payload, user)
 		: payload;
 
+	if (!scopedPayload.employeeId) {
+		throw badRequest('Employee is required for reimbursement requests', 'EMPLOYEE_REQUIRED');
+	}
+
+	if (!scopedPayload.entityId) {
+		throw badRequest('Company entity is required for reimbursement requests', 'ENTITY_REQUIRED');
+	}
+
+	const amount = Number(scopedPayload.amount ?? 0);
+	const taxAmount = Number(scopedPayload.taxAmount ?? 0);
 	const reimbursementRequestDefaultPayload = {
 			expenseDate: scopedPayload.expenseDate ?? new Date(),
 			currencyCode: scopedPayload.currencyCode ?? "USD",
-			amount: scopedPayload.amount ?? 0,
-			taxAmount: scopedPayload.taxAmount ?? 0,
-			totalAmount: scopedPayload.totalAmount ?? "0.00",
+			amount,
+			taxAmount,
+			totalAmount: (amount + taxAmount).toFixed(2),
 			status: scopedPayload.status ?? "draft",
 			paidDate: scopedPayload.paidDate ?? null
 	};
-	const reimbursementRequest = await ReimbursementRequest.create({...scopedPayload, ...reimbursementRequestDefaultPayload}, { transaction: t });
+	const reimbursementRequest = await ReimbursementRequest.create({
+		...scopedPayload,
+		...reimbursementRequestDefaultPayload,
+		employeeId: scopedPayload.employeeId,
+		entityId: scopedPayload.entityId,
+	} as any, { transaction: t });
+	const plainReimbursementRequest = reimbursementRequest.get({ plain: true });
+	await createSystemInvoiceForReimbursement(plainReimbursementRequest, t);
 
-	return reimbursementRequest.get({ plain: true });
+	return {
+		...plainReimbursementRequest,
+		linkedInvoiceCreated: true,
+	};
 	});
 };
 
@@ -153,7 +174,15 @@ export const updateReimbursementRequest = async (params: ReimbursementRequestPri
 		? sanitizeEmployeeReimbursementPayload(payload, user)
 		: payload;
 
-	await reimbursementRequest.update(scopedPayload, { transaction: t });
+	const updatePayload = { ...scopedPayload } as any;
+	if (updatePayload.employeeId == null) {
+		delete updatePayload.employeeId;
+	}
+	if (updatePayload.entityId == null) {
+		delete updatePayload.entityId;
+	}
+
+	await reimbursementRequest.update(updatePayload, { transaction: t });
 
 	return {
 		message: 'ReimbursementRequest updated successfully',

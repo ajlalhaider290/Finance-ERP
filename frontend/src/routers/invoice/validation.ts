@@ -17,9 +17,11 @@ export const invoiceCreateSchema = z.object({
 	currentApproverId: z.uuid("Invalid UUID format").nullish(),
 	invoiceDocumentId: z.uuid("Invalid UUID format").nullish(),
 	entityId: z.uuid("Invalid UUID format"),
+	sourceType: z.enum(["manual", "reimbursement", "intercompany"]).nullish(),
+	sourceReimbursementRequestId: z.uuid("Invalid UUID format").nullish(),
+	sourceIntercompanyTransactionId: z.uuid("Invalid UUID format").nullish(),
 });
 
 
 export const invoiceUpdateSchema = invoiceCreateSchema;
-
 

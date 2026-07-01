@@ -24,7 +24,7 @@ export const FormFieldSelect = <T extends FieldValues>({
   loading,
 }: FormFieldSelectProps<T>) => {
   const { control } = useFormContext<T>();
-  const isDisabled = disabled || loading;
+  const isDisabled = Boolean(disabled || loading);
 
   return (
     <Controller
@@ -36,7 +36,6 @@ export const FormFieldSelect = <T extends FieldValues>({
             {label} {required && <span className="text-destructive">*</span>}
           </FieldLabel>
           <Select
-            key={`${String(name)}-${field.value}`}
             onValueChange={(value) => field.onChange(valueType === 'boolean' ? value === 'true' : value)}
             value={field.value?.toString() || ''}
             disabled={isDisabled}>
@@ -44,6 +43,16 @@ export const FormFieldSelect = <T extends FieldValues>({
               <SelectValue placeholder={placeholder} />
             </SelectTrigger>
             <SelectContent>
+              {loading && (
+                <SelectItem value="__loading" disabled>
+                  Loading...
+                </SelectItem>
+              )}
+              {!loading && options.length === 0 && (
+                <SelectItem value="__empty" disabled>
+                  No options available
+                </SelectItem>
+              )}
               {options?.map((option) => {
                 const Icon = option.icon ? icons[option.icon as keyof typeof icons] : undefined;
                 return (

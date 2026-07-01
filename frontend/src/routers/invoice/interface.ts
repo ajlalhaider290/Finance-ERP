@@ -27,6 +27,9 @@ export type Invoice = InvoicePrimaryKeys & {
 	currentApproverId?: string | null;
 	invoiceDocumentId?: string | null;
 	entityId: string;
+	sourceType?: string | null;
+	sourceReimbursementRequestId?: string | null;
+	sourceIntercompanyTransactionId?: string | null;
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -38,6 +41,8 @@ export type InvoiceIndex = Omit<Invoice, 'invoiceId'> & {
 	invoiceApprovalsAssignedLabel: string;
 	invoiceRecordsLabel: string;
 	invoicesLabel: string;
+	sourceReimbursementRequestLabel?: string;
+	sourceIntercompanyTransactionLabel?: string;
 	_meta: ItemMeta<InvoicePrimaryKeys>;
 }
 
@@ -57,6 +62,7 @@ export type InvoiceDetail = Omit<Invoice, 'invoiceId'> & {
 	invoiceApprovalsAssignedLabel: string;
 	invoiceRecordsLabel: string;
 	invoicesLabel: string;
+	sourceReimbursementRequestLabel?: string;
+	sourceIntercompanyTransactionLabel?: string;
 	_meta: ItemMeta<InvoicePrimaryKeys>;
 }
-

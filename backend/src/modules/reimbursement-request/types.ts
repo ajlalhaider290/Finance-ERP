@@ -7,7 +7,7 @@ export interface ReimbursementRequestPrimaryKeys {
 	reimbursementRequestId: string;
 }
 export interface CreateReimbursementRequestInput {
-	employeeId: string;
+	employeeId?: string | null;
 	businessPurpose: string;
 	expenseDate: Date;
 	categoryId: string;
@@ -20,7 +20,7 @@ export interface CreateReimbursementRequestInput {
 	status: string;
 	currentApproverId?: string | null;
 	paidDate?: Date | null;
-	entityId: string;
+	entityId?: string | null;
 }
 
 export type UpdateReimbursementRequestInput = CreateReimbursementRequestInput;

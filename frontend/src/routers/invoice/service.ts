@@ -42,6 +42,26 @@ export const addInvoice = async (data: Partial<InvoiceCreate>) => {
   return await apiClient.post<MutationResponse<InvoiceCreate>>('/invoices', data);
 };
 
+export const submitInvoice = async (primaryKeys: Partial<InvoicePrimaryKeys>) => {
+  const { invoiceId } = primaryKeys;
+  return await apiClient.post<MutationResponse<InvoiceUpdate>>(`/invoices/${invoiceId}/submit`);
+};
+
+export const approveInvoice = async (primaryKeys: Partial<InvoicePrimaryKeys>) => {
+  const { invoiceId } = primaryKeys;
+  return await apiClient.post<MutationResponse<InvoiceUpdate>>(`/invoices/${invoiceId}/approve`);
+};
+
+export const rejectInvoice = async (primaryKeys: Partial<InvoicePrimaryKeys>) => {
+  const { invoiceId } = primaryKeys;
+  return await apiClient.post<MutationResponse<InvoiceUpdate>>(`/invoices/${invoiceId}/reject`);
+};
+
+export const returnInvoice = async (primaryKeys: Partial<InvoicePrimaryKeys>) => {
+  const { invoiceId } = primaryKeys;
+  return await apiClient.post<MutationResponse<InvoiceUpdate>>(`/invoices/${invoiceId}/return`);
+};
+
 export const uploadInvoice = async (data: FormData) => {
   return await apiClient.post<{ url: string }>('/invoices/upload', data, {
     headers: {
@@ -53,4 +73,3 @@ export const uploadInvoice = async (data: FormData) => {
 export const deleteUploadInvoice = async (data: InvoicePrimaryKeys & { property: string }) => {
   return await apiClient.delete<void>(`/invoices/upload/${data.invoiceId}`, { data });
 };
-

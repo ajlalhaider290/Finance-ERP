@@ -1,4 +1,4 @@
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Form } from '@/components/ui/form';
 import { FormFieldSelect, FormFieldText, FormFieldDate } from '@/components/FormFieldWrapper';
@@ -20,14 +20,21 @@ const ReimbursementRequestForm = memo(() => {
 	const { data : employeeIds, isLoading : isLoadingEmployeeIds } = useUserOptions(!isEmployee);
 	const { data : categoryIds, isLoading : isLoadingCategoryIds } = useExpenseCategoryOptions();
 	const { data : currentApproverIds, isLoading : isLoadingCurrentApproverIds } = useUserOptions(!isEmployee);
-	const { data : entityIds, isLoading : isLoadingEntityIds } = useCompanyEntityOptions();
+	const { data : entityIds, isLoading : isLoadingEntityIds } = useCompanyEntityOptions(shouldShowEntity);
 
 	const amount = form.watch('amount');
 	const taxAmount = form.watch('taxAmount');
 
+	const prevTotalRef = useRef<string>('');
+
 	useEffect(() => {
 		const total = Number(amount || 0) + Number(taxAmount || 0);
-		form.setValue('totalAmount', total.toFixed(2), { shouldValidate: true });
+		const newTotal = total.toFixed(2);
+		// Only update if the value actually changed to prevent re-render cascades
+		if (prevTotalRef.current !== newTotal) {
+			prevTotalRef.current = newTotal;
+			form.setValue('totalAmount', newTotal);
+		}
 	}, [amount, taxAmount, form]);
 
 

@@ -1,5 +1,5 @@
 import express, {Express, Request, Response } from 'express';
-import cors from 'cors';
+import cors, { CorsOptions } from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import path from 'path';
@@ -31,15 +31,37 @@ if (env.TZ) {
 
 const app: Express = express();
 
+app.set('etag', false);
+
 // Core middlewares
 app.use(express.json({ limit: '256kb' }));
 app.use(express.urlencoded({ extended: true, limit: '256kb' }));
 
 // CORS configuration
-const corsOrigins = env.CORS_ORIGINS.split(',').map(origin => origin.trim());
-app.use(cors({
-  origin: corsOrigins
-}));
+const corsOrigins = env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean);
+const allowedCorsOrigins = new Set(corsOrigins);
+const localDevOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/;
+const corsOptions: CorsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedCorsOrigins.has(origin) || (env.ENVIRONMENT === 'development' && localDevOriginPattern.test(origin))) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error(`Origin ${origin} is not allowed by CORS`));
+  },
+};
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
+
+app.use((req: Request, res: Response, next) => {
+  if (!req.path.startsWith('/public')) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+  next();
+});
 
 app.use(helmet());
 app.use(morgan(env.ENVIRONMENT === 'production' ? 'combined' : 'dev'));

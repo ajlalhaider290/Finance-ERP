@@ -20,7 +20,7 @@ const ReimbursementRequestForm = memo(() => {
 	const { data : employeeIds, isLoading : isLoadingEmployeeIds } = useUserOptions(!isEmployee);
 	const { data : categoryIds, isLoading : isLoadingCategoryIds } = useExpenseCategoryOptions();
 	const { data : currentApproverIds, isLoading : isLoadingCurrentApproverIds } = useUserOptions(!isEmployee);
-	const { data : entityIds, isLoading : isLoadingEntityIds } = useCompanyEntityOptions();
+	const { data : entityIds, isLoading : isLoadingEntityIds } = useCompanyEntityOptions(shouldShowEntity);
 
 	const amount = form.watch('amount');
 	const taxAmount = form.watch('taxAmount');

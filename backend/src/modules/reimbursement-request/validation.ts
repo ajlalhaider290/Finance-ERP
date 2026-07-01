@@ -12,7 +12,7 @@ export const reimbursementRequestParamValidator = z.object({
 
 
 const _reimbursementRequestBaseSchema = z.object({
-	employeeId: z.uuid("Invalid UUID format"),
+	employeeId: z.uuid("Invalid UUID format").nullable().optional().or(z.literal('')),
 	businessPurpose: z.string({error: "Business Purpose is required"}),
 	expenseDate: z.coerce.date({error: "Expense Date is required"}),
 	categoryId: z.uuid("Invalid UUID format"),
@@ -25,11 +25,10 @@ const _reimbursementRequestBaseSchema = z.object({
 	status: z.enum(["draft", "submitted", "under review", "approved", "rejected", "returned", "paid", "cancelled"]),
 	currentApproverId: z.uuid("Invalid UUID format").nullable().optional(),
 	paidDate: z.coerce.date().nullable().optional(),
-	entityId: z.uuid("Invalid UUID format"),
+	entityId: z.uuid("Invalid UUID format").nullable().optional().or(z.literal('')),
 });
 
 export const createReimbursementRequestPayloadValidator = _reimbursementRequestBaseSchema;
 
 export const updateReimbursementRequestPayloadValidator = _reimbursementRequestBaseSchema;
-
 

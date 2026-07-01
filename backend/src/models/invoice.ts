@@ -5,6 +5,8 @@ import { Customer } from "./customer";
 import { User } from "./user";
 import { InvoiceDocument } from "./invoice-document";
 import { CompanyEntity } from "./company-entity";
+import { ReimbursementRequest } from "./reimbursement-request";
+import { IntercompanyTransaction } from "./intercompany-transaction";
 
 export class Invoice extends Model< InferAttributes<Invoice>, InferCreationAttributes<Invoice>> {
 
@@ -25,6 +27,9 @@ declare status: string;
 declare currentApproverId: ForeignKey<User['userId']> | null;
 declare invoiceDocumentId: ForeignKey<InvoiceDocument['documentId']> | null;
 declare entityId: ForeignKey<CompanyEntity['entityId']>;
+declare sourceType: CreationOptional<string> | null;
+declare sourceReimbursementRequestId: ForeignKey<ReimbursementRequest['reimbursementRequestId']> | null;
+declare sourceIntercompanyTransactionId: ForeignKey<IntercompanyTransaction['transactionId']> | null;
 declare createdAt: CreationOptional<Date>;
 declare updatedAt: CreationOptional<Date>;
 }
@@ -112,6 +117,18 @@ export function initializeInvoice(sequelize: Sequelize) {
 				type: DataTypes.UUID,
 				allowNull: false
 				},
+			sourceType: {
+				type: DataTypes.STRING,
+				allowNull: true
+				},
+			sourceReimbursementRequestId: {
+				type: DataTypes.UUID,
+				allowNull: true
+				},
+			sourceIntercompanyTransactionId: {
+				type: DataTypes.UUID,
+				allowNull: true
+				},
 			createdAt: {
 				type: DataTypes.DATE,
 				allowNull: false,
@@ -129,6 +146,9 @@ export function initializeInvoice(sequelize: Sequelize) {
 			{ name: 'invoices_entityid_idx', fields: ['entity_id'], unique: false }, 
 			{ name: 'invoices_invoicedocumentid_idx', fields: ['invoice_document_id'], unique: false }, 
 			{ name: 'invoices_currentapproverid_idx', fields: ['current_approver_id'], unique: false }, 
+			{ name: 'invoices_sourceintercompanytransactionid_idx', fields: ['source_intercompany_transaction_id'], unique: false },
+			{ name: 'invoices_sourcereimbursementrequestid_idx', fields: ['source_reimbursement_request_id'], unique: false },
+			{ name: 'invoices_sourcetype_idx', fields: ['source_type'], unique: false },
 			{ name: 'invoices_status_idx', fields: ['status'], unique: false }, 
 			{ name: 'invoices_paymentstatus_idx', fields: ['payment_status'], unique: false }, 
 			{ name: 'invoices_duedate_idx', fields: ['due_date'], unique: false }, 
@@ -161,6 +181,14 @@ export function establishRelationsInvoice() {
   Invoice.belongsTo(CompanyEntity, {
     foreignKey: 'entityId',
     as: 'invoices',
+  });
+  Invoice.belongsTo(ReimbursementRequest, {
+    foreignKey: 'sourceReimbursementRequestId',
+    as: 'sourceReimbursementRequest',
+  });
+  Invoice.belongsTo(IntercompanyTransaction, {
+    foreignKey: 'sourceIntercompanyTransactionId',
+    as: 'sourceIntercompanyTransaction',
   });
 
 	}

@@ -1,12 +1,19 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { MessageCircle, X, Send, Bot, Sparkles } from 'lucide-react';
+import { Bot, ChevronDown, LifeBuoy, Loader2, MessageCircle, Send, Sparkles, X } from 'lucide-react';
 import apiClient from '@/services/apiClient';
+import { RootState, useAppSelector } from '@/store';
 import './SupportChat.css';
 
 interface ChatMessage {
   role: 'user' | 'model';
   content: string;
 }
+
+const quickPrompts = [
+  'How do I submit a reimbursement?',
+  'Why can I not see an invoice?',
+  'What happens after invoice approval?',
+];
 
 const SupportChat: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,6 +24,7 @@ const SupportChat: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const user = useAppSelector((state: RootState) => state.session.user);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -27,10 +35,16 @@ const SupportChat: React.FC = () => {
   }, [messages, isLoading, scrollToBottom]);
 
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
+    if (isOpen) {
+      window.setTimeout(() => inputRef.current?.focus(), 80);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!inputRef.current) return;
+    inputRef.current.style.height = 'auto';
+    inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 112)}px`;
+  }, [input]);
 
   const handleOpen = () => {
     setIsOpen(true);
@@ -42,17 +56,16 @@ const SupportChat: React.FC = () => {
     setTimeout(() => {
       setIsOpen(false);
       setIsClosing(false);
-    }, 200);
+    }, 160);
   };
 
-  const handleSend = async () => {
-    const trimmed = input.trim();
+  const sendMessage = async (messageText: string) => {
+    const trimmed = messageText.trim();
     if (!trimmed || isLoading) return;
 
     setError(null);
     const userMessage: ChatMessage = { role: 'user', content: trimmed };
-    const updatedMessages = [...messages, userMessage];
-    setMessages(updatedMessages);
+    setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
@@ -68,168 +81,141 @@ const SupportChat: React.FC = () => {
       };
       setMessages((prev) => [...prev, aiMessage]);
     } catch (err: any) {
-      const errorMsg =
-        err?.response?.data?.message ||
-        'Failed to get a response. Please try again.';
+      const errorMsg = err?.response?.data?.message || 'The assistant could not respond right now.';
       setError(errorMsg);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleSend = () => sendMessage(input);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
 
-  // Simple markdown rendering for AI messages
-  const renderMarkdown = (text: string) => {
-    // Split into lines and process
-    const lines = text.split('\n');
-    const elements: React.ReactNode[] = [];
-    let listItems: string[] = [];
-    let listType: 'ul' | 'ol' | null = null;
+  const renderMessage = (text: string) => {
+    const blocks = text
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
 
-    const flushList = () => {
-      if (listItems.length > 0 && listType) {
-        const Tag = listType;
-        elements.push(
-          <Tag key={`list-${elements.length}`}>
-            {listItems.map((item, i) => (
-              <li key={i} dangerouslySetInnerHTML={{ __html: inlineFormat(item) }} />
-            ))}
-          </Tag>
-        );
-        listItems = [];
-        listType = null;
-      }
-    };
-
-    const inlineFormat = (line: string): string => {
-      return line
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/`(.+?)`/g, '<code>$1</code>')
-        .replace(/\*(.+?)\*/g, '<em>$1</em>');
-    };
-
-    for (const line of lines) {
-      const bulletMatch = line.match(/^[-*]\s+(.+)/);
-      const orderedMatch = line.match(/^\d+\.\s+(.+)/);
-
-      if (bulletMatch) {
-        if (listType !== 'ul') {
-          flushList();
-          listType = 'ul';
-        }
-        listItems.push(bulletMatch[1]);
-      } else if (orderedMatch) {
-        if (listType !== 'ol') {
-          flushList();
-          listType = 'ol';
-        }
-        listItems.push(orderedMatch[1]);
-      } else {
-        flushList();
-        if (line.trim()) {
-          elements.push(
-            <p
-              key={`p-${elements.length}`}
-              dangerouslySetInnerHTML={{ __html: inlineFormat(line) }}
-            />
-          );
-        }
-      }
+    if (blocks.length === 0) {
+      return null;
     }
-    flushList();
 
-    return <>{elements}</>;
+    return blocks.map((line, index) => {
+      const bullet = line.match(/^[-*]\s+(.+)/);
+      const ordered = line.match(/^\d+\.\s+(.+)/);
+
+      if (bullet || ordered) {
+        return (
+          <div key={`${index}-${line}`} className="support-msg-list-row">
+            <span className="support-msg-list-marker">{ordered ? `${line.split('.')[0]}.` : '-'}</span>
+            <span>{bullet?.[1] || ordered?.[1]}</span>
+          </div>
+        );
+      }
+
+      return <p key={`${index}-${line}`}>{line}</p>;
+    });
   };
+
+  const roleLabel = user?.role ? user.role.replace(/([A-Z])/g, ' $1').trim() : 'Finance user';
 
   return (
     <>
-      {/* Floating trigger button */}
       {!isOpen && (
-        <button
-          className="support-chat-trigger"
-          onClick={handleOpen}
-          aria-label="Open support chat"
-          id="support-chat-trigger"
-        >
-          <MessageCircle />
+        <button className="support-chat-trigger" onClick={handleOpen} aria-label="Open finance assistant" id="support-chat-trigger">
+          <span className="support-chat-trigger-icon">
+            <MessageCircle />
+          </span>
+          <span className="support-chat-trigger-text">Assistant</span>
         </button>
       )}
 
-      {/* Chat panel */}
       {isOpen && (
-        <div className={`support-chat-panel ${isClosing ? 'closing' : ''}`} role="dialog" aria-label="Support Chat">
-          {/* Header */}
-          <div className="support-chat-header">
+        <section className={`support-chat-panel ${isClosing ? 'closing' : ''}`} role="dialog" aria-label="Finance ERP Assistant">
+          <header className="support-chat-header">
             <div className="support-chat-header-info">
               <div className="support-chat-header-avatar">
                 <Bot />
               </div>
               <div className="support-chat-header-text">
-                <h3>Finance ERP Assistant</h3>
-                <p>Powered by Gemini AI</p>
+                <h3>Finance Assistant</h3>
+                <p>{roleLabel} support</p>
               </div>
             </div>
-            <button className="support-chat-close" onClick={handleClose} aria-label="Close chat">
-              <X />
+            <button className="support-chat-close" onClick={handleClose} aria-label="Close assistant">
+              <ChevronDown className="support-chat-minimize" />
+              <X className="support-chat-close-icon" />
             </button>
+          </header>
+
+          <div className="support-chat-context">
+            <LifeBuoy />
+            <span>Connected to Finance ERP help</span>
           </div>
 
-          {/* Messages */}
           <div className="support-chat-messages">
             {messages.length === 0 && !isLoading && (
               <div className="support-chat-welcome">
                 <div className="support-chat-welcome-icon">
                   <Sparkles />
                 </div>
-                <h4>Hi there! 👋</h4>
-                <p>
-                  I'm your Finance ERP assistant. Ask me about reimbursements,
-                  invoices, approvals, or anything else in the system.
-                </p>
-              </div>
-            )}
-
-            {messages.map((msg, index) => (
-              <div
-                key={index}
-                className={`support-msg ${msg.role === 'user' ? 'support-msg-user' : 'support-msg-ai'}`}
-              >
-                {msg.role === 'user' ? msg.content : renderMarkdown(msg.content)}
-              </div>
-            ))}
-
-            {isLoading && (
-              <div className="support-msg support-msg-ai">
-                <div className="support-msg-loading">
-                  <span />
-                  <span />
-                  <span />
+                <h4>How can I help?</h4>
+                <p>Ask about reimbursements, invoices, approvals, intercompany transactions, or access issues.</p>
+                <div className="support-chat-prompts">
+                  {quickPrompts.map((prompt) => (
+                    <button key={prompt} type="button" onClick={() => sendMessage(prompt)} disabled={isLoading}>
+                      {prompt}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
 
-            {error && (
-              <div className="support-msg-error">{error}</div>
+            {messages.map((msg, index) => (
+              <div key={`${msg.role}-${index}`} className={`support-msg-row ${msg.role === 'user' ? 'support-msg-row-user' : 'support-msg-row-ai'}`}>
+                {msg.role === 'model' && (
+                  <div className="support-msg-avatar">
+                    <Bot />
+                  </div>
+                )}
+                <div className={`support-msg ${msg.role === 'user' ? 'support-msg-user' : 'support-msg-ai'}`}>
+                  {msg.role === 'user' ? <p>{msg.content}</p> : renderMessage(msg.content)}
+                </div>
+              </div>
+            ))}
+
+            {isLoading && (
+              <div className="support-msg-row support-msg-row-ai">
+                <div className="support-msg-avatar">
+                  <Bot />
+                </div>
+                <div className="support-msg support-msg-ai support-msg-loading-wrap">
+                  <Loader2 className="support-msg-loader" />
+                  <span>Thinking...</span>
+                </div>
+              </div>
             )}
+
+            {error && <div className="support-msg-error">{error}</div>}
 
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
-          <div className="support-chat-input-area">
+          <footer className="support-chat-input-area">
             <textarea
               ref={inputRef}
               className="support-chat-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask a question..."
+              placeholder="Type your question"
               rows={1}
               disabled={isLoading}
               id="support-chat-input"
@@ -243,8 +229,8 @@ const SupportChat: React.FC = () => {
             >
               <Send />
             </button>
-          </div>
-        </div>
+          </footer>
+        </section>
       )}
     </>
   );

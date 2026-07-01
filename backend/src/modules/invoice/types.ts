@@ -23,6 +23,9 @@ export interface CreateInvoiceInput {
 	currentApproverId?: string | null;
 	invoiceDocumentId?: string | null;
 	entityId: string;
+	sourceType?: string | null;
+	sourceReimbursementRequestId?: string | null;
+	sourceIntercompanyTransactionId?: string | null;
 }
 
 export type UpdateInvoiceInput = CreateInvoiceInput;
@@ -32,3 +35,5 @@ export interface QueryInvoiceInput {
 	pageSize? : number;
 
 }
+
+export type InvoiceWorkflowAction = 'submit' | 'approve' | 'reject' | 'return';
